@@ -32,7 +32,7 @@ public struct UIImageViewAlignmentMask: OptionSet {
 }
 
 @IBDesignable
-open class UIImageViewAligned: UIImageView {
+open class UIImageViewAligned: UIView {
     
     /**
      The technique to use for aligning the image.
@@ -46,23 +46,23 @@ open class UIImageViewAligned: UIImageView {
         }
     }
     
-    open override var image: UIImage? {
+    open var image: UIImage? {
         set {
-            realImageView?.image = newValue
+            imageView?.image = newValue
             setNeedsLayout()
         }
         get {
-            return realImageView?.image
+            return imageView?.image
         }
     }
     
-    open override var highlightedImage: UIImage? {
+    open var highlightedImage: UIImage? {
         set {
-            realImageView?.highlightedImage = newValue
+            imageView?.highlightedImage = newValue
             setNeedsLayout()
         }
         get {
-            return realImageView?.highlightedImage
+            return imageView?.highlightedImage
         }
     }
     
@@ -122,15 +122,7 @@ open class UIImageViewAligned: UIImageView {
         }
     }
     
-    open override var isHighlighted: Bool {
-        set {
-            super.isHighlighted = newValue
-            layer.contents = nil
-        }
-        get {
-            return super.isHighlighted
-        }
-    }
+    open var isHighlighted: Bool = false
     
     /**
      The inner image view.
@@ -138,7 +130,7 @@ open class UIImageViewAligned: UIImageView {
      It should be used only when necessary.
      Accessible to keep compatibility with the original `UIImageViewAligned`.
      */
-    public private(set) var realImageView: UIImageView?
+    public private(set) var imageView: UIImageView?
     
     private var realContentSize: CGSize {
         var size = bounds.size
@@ -169,16 +161,19 @@ open class UIImageViewAligned: UIImageView {
     
     public override init(frame: CGRect) {
         super.init(frame: frame)
+
         setup()
     }
     
-    public override init(image: UIImage?) {
-        super.init(image: image)
+    public init(image: UIImage?) {
+        super.init(frame: .zero)
+
         setup(image: image)
     }
     
-    public override init(image: UIImage?, highlightedImage: UIImage?) {
-        super.init(image: image, highlightedImage: highlightedImage)
+    public init(image: UIImage?, highlightedImage: UIImage?) {
+        super.init(frame: .zero)
+
         setup(image: image, highlightedImage: highlightedImage)
     }
     
@@ -192,34 +187,14 @@ open class UIImageViewAligned: UIImageView {
         layoutIfNeeded()
         updateLayout()
     }
-    
-    open override func didMoveToSuperview() {
-        if #available(iOS 11, *) {
-            super.image = nil
-        }
 
-        super.didMoveToSuperview()
-        layer.contents = nil
-    }
-    
-    open override func didMoveToWindow() {
-        super.didMoveToWindow()
-        layer.contents = nil
-
-        if #available(iOS 11, *) {
-            let currentImage = realImageView?.image
-            image = nil
-            super.image = nil
-            realImageView?.image = currentImage
-        }
-    }
-    
     private func setup(image: UIImage? = nil, highlightedImage: UIImage? = nil) {
-        realImageView = UIImageView(image: image ?? super.image, highlightedImage: highlightedImage ?? super.highlightedImage)
-        realImageView?.frame = bounds
-        realImageView?.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-        realImageView?.contentMode = contentMode
-        addSubview(realImageView!)
+
+        imageView = UIImageView(image: image, highlightedImage: highlightedImage)
+        imageView?.frame = bounds
+        imageView?.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        imageView?.contentMode = contentMode
+        addSubview(imageView!)
     }
     
     private func updateLayout() {
@@ -240,14 +215,7 @@ open class UIImageViewAligned: UIImageView {
             realFrame.origin.y = bounds.maxY - realFrame.size.height
         }
         
-        realImageView?.frame = realFrame.integral
-        
-        // Make sure we clear the contents of this container layer, since it refreshes from the image property once in a while.
-        layer.contents = nil
-        
-        if #available(iOS 11, *) {
-            super.image = nil
-        }
+        imageView?.frame = realFrame.integral
     }
     
     private func setInspectableProperty(_ newValue: Bool, alignment: UIImageViewAlignmentMask) {
